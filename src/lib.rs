@@ -3,11 +3,11 @@ pub mod api {
     use serde::{Deserialize, Serialize};
     use serde_json::json;
     use std::error::Error;
-    use std::fs;
-    use std::io;
     use std::path::Path;
+    use std::{fs, io};
     use tokio::time::Duration;
-    use tokio::time::sleep;
+    use tokio_retry::Retry;
+    use tokio_retry::strategy::ExponentialBackoff;
 
     /// 文件上传URL
     pub const FILE_UPLOAD_URL: &str =
@@ -62,7 +62,6 @@ pub mod api {
         pub async fn submit_transcription_order(
             &self,
             file_id: String,
-            session_id: String,
             options: Option<TranscriptionOptions>,
         ) -> Result<String, Box<dyn Error>> {
             let opts = options.unwrap_or_default();
@@ -93,7 +92,7 @@ pub mod api {
                 .header("Accept", "application/json, text/plain, */*")
                 .header("Content-Type", "application/json")
                 .header("X-Biz-Id", "tjzs")
-                .header("X-Session-Id", session_id)
+                .header("X-Session-Id", self.session_id.clone())
                 .json(&payload)
                 .send()
                 .await?;
@@ -240,6 +239,7 @@ pub mod api {
             &self,
             audio_path_str: &str,
             task_name: Option<String>,
+            options: Option<TranscriptionOptions>,
         ) -> Result<String, Box<dyn Error>> {
             // 调用上传函数获取 file_id
             let file_id = self.upload_audio_file(audio_path_str, task_name).await?;
@@ -247,27 +247,32 @@ pub mod api {
             // 后续处理步骤
             self.calculate_duration_on_iflyrec(file_id.clone()).await?;
 
-            let order_id = loop {
+            let retry_strategy = ExponentialBackoff::from_millis(500)
+                .max_delay(Duration::from_secs(10))
+                .take(5); // 最多重试5次
+
+            let order_id = Retry::spawn(retry_strategy, || async {
                 match self
-                    .submit_transcription_order(file_id.clone(), self.session_id.clone(), None)
+                    .submit_transcription_order(file_id.clone(), options.clone())
                     .await
                 {
-                    Ok(order_id) => break order_id,
+                    Ok(order_id) => Ok(order_id),
                     Err(e) => {
                         if e.to_string().contains("订单音频时长计算中") {
-                            sleep(Duration::from_millis(500)).await;
+                            Err(e) // 可重试的错误
                         } else {
-                            return Err(e);
+                            return Err(e); // 不可重试的错误
                         }
                     }
                 }
-            };
+            })
+            .await?;
 
             Ok(order_id)
         }
     }
 
-    // #[derive(Default)]
+    #[derive(Clone, Debug)]
     pub struct TranscriptionOptions {
         pub need_sms: bool,
         pub hot_words: String,
