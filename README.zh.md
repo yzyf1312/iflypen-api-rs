@@ -18,7 +18,7 @@ IFlyPen API 是讯飞听见客户端 API 的一个特殊版本。本仓库是其
 ## 快速开始
 
 ### 依赖安装
-```toml
+```bash
 cargo add --git https://github.com/iflypen/iflypen-api-rs
 ```
 

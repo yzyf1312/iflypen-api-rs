@@ -19,7 +19,7 @@ This project aims to remove iFlytek's restriction on this free API (which requir
 
 ### Dependencies
 
-```toml
+```bash
 cargo add --git https://github.com/iflypen/iflypen-api-rs
 ```
 
