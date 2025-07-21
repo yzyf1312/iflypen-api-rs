@@ -20,7 +20,7 @@ This project aims to remove iFlytek's restriction on this free API (which requir
 ### Dependencies
 
 ```bash
-cargo add --git https://github.com/iflypen/iflypen-api-rs
+cargo add --git https://github.com/yzyf1312/iflypen-api-rs.git
 ```
 
 ### Example

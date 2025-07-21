@@ -19,7 +19,7 @@ IFlyPen API 是讯飞听见客户端 API 的一个特殊版本。本仓库是其
 
 ### 依赖安装
 ```bash
-cargo add --git https://github.com/iflypen/iflypen-api-rs
+cargo add --git https://github.com/yzyf1312/iflypen-api-rs.git
 ```
 
 ### 示例
