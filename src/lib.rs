@@ -54,7 +54,7 @@ pub mod api {
     impl IflyrecClient {
         pub fn new(session_id: String) -> Self {
             Self {
-                session_id: session_id,
+                session_id,
                 http_client: Client::new(),
             }
         }
@@ -65,7 +65,7 @@ pub mod api {
             session_id: String,
             options: Option<TranscriptionOptions>,
         ) -> Result<String, Box<dyn Error>> {
-            let opts = options.unwrap_or_else(|| TranscriptionOptions::new());
+            let opts = options.unwrap_or_default();
 
             let payload = json!(
                 {
@@ -124,8 +124,7 @@ pub mod api {
             let response = self
                 .http_client
                 .post(format!(
-                    "https://www.iflyrec.com/TranscriptOrderService/v1/tempAudios/{}/calculateDuration",
-                    file_id
+                    "https://www.iflyrec.com/TranscriptOrderService/v1/tempAudios/{file_id}/calculateDuration"
                 ))
                 .header("X-Biz-Id", "tjzs")
                 .header("X-Session-Id", self.session_id.clone())
@@ -136,7 +135,7 @@ pub mod api {
             if response.status().is_success() {
                 Ok(())
             } else {
-                Err(format!("Failed to calculate duration for file_id: {}", file_id).into())
+                Err(format!("Failed to calculate duration for file_id: {file_id}").into())
             }
         }
 
@@ -170,7 +169,7 @@ pub mod api {
             // 创建初始元数据以获取 file_id
             let initial_metadata = AudioMetadata::new(
                 task_name.to_string(),
-                format!("tjb1/{}", file_name),
+                format!("tjb1/{file_name}"),
                 file_size,
                 audio_time,
                 0,
@@ -268,15 +267,15 @@ pub mod api {
         }
     }
 
-    #[derive(Default)]
+    // #[derive(Default)]
     pub struct TranscriptionOptions {
         pub need_sms: bool,
         pub hot_words: String,
         pub language: String,
     }
 
-    impl TranscriptionOptions {
-        pub fn new() -> Self {
+    impl Default for TranscriptionOptions {
+        fn default() -> Self {
             Self {
                 need_sms: false,
                 hot_words: String::new(),

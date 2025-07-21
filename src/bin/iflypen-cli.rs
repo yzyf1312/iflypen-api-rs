@@ -43,9 +43,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await
     {
         Ok(order_id) => {
-            println!("✅ Finished! Order ID: {}", order_id);
+            println!("✅ Finished! Order ID: {order_id}");
         }
-        Err(e) => eprintln!("❌ Error: {}", e),
+        Err(e) => eprintln!("❌ Error: {e}"),
     }
 
     Ok(())
