@@ -59,7 +59,7 @@ If you would like to contribute to this project or have any questions, feel free
 
 ## License
 
-## This project is licensed under the MIT License, but all usage:
+### This project is licensed under the MIT License, but all usage:
 - Is not endorsed or supported by iFlytek.
 - Must be undertaken at your own legal risk.
 - Comes with no service guarantees.
