@@ -1,8 +1,11 @@
 use clap::Parser;
-use iflypen_api_rs::api::{IflyrecClient, TranscriptionOptions};
+use iflypen_api_rs::api::{IflyrecClient, TranscriptionOptions, TranscriptionOrder};
 use rusqlite::{Connection, Result as SqlResult};
 use std::collections::HashMap;
 use std::error::Error;
+use tokio::time::Duration;
+use tokio_retry::Retry;
+use tokio_retry::strategy::ExponentialBackoff;
 
 #[derive(Parser)]
 struct Args {
@@ -139,19 +142,41 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let options = build_transcription_options(&args);
 
     // 提交转录任务
-    match client
+    let order_id = match client
         .initiate_transcription_task(&args.audio_file, args.task_name, options)
         .await
     {
         Ok(order_id) => {
             println!("✅ 转录任务提交成功！");
             println!("订单 ID: {}", order_id);
+            order_id
         }
         Err(e) => {
             eprintln!("❌ 转录任务提交失败: {}", e);
             std::process::exit(1);
         }
-    }
+    };
+    println!("Waiting for the result...");
+    println!("Program will exit after 1 minute.");
+    let retry_strategy = ExponentialBackoff::from_millis(500)
+        .max_delay(Duration::from_secs(10))
+        .take(5); // 最多重试5次
+
+    let order = Retry::spawn(retry_strategy, || async {
+        match client.get_order(order_id.clone()).await {
+            Ok(order_option) => match order_option {
+                Some(order) => {
+                    println!("✅ 转录任务完成！");
+                    Ok::<TranscriptionOrder, Box<dyn Error>>(order)
+                }
+                None => Err("⏳ 转录任务正在进行中...".into()),
+            },
+            Err(e) => Err(format!("❌ 获取订单状态失败: {}", e).into()),
+        }
+    })
+    .await?;
+
+    println!("订单详细信息: {:#?}", order);
 
     Ok(())
 }

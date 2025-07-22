@@ -33,7 +33,7 @@ pub mod api {
     }
 
     #[derive(Debug, Deserialize)]
-    pub struct ApiResponse {
+    pub struct SubmitTranscriptionOrderResponse {
         pub code: String,
         pub desc: String,
         pub biz: Option<BizData>,
@@ -97,7 +97,7 @@ pub mod api {
                 .send()
                 .await?;
 
-            let api_response: ApiResponse = response.json().await?;
+            let api_response: SubmitTranscriptionOrderResponse = response.json().await?;
             if api_response.code != "000000" {
                 return Err(format!("API error: {}", api_response.desc).into());
             }
@@ -138,6 +138,40 @@ pub mod api {
             }
         }
 
+        pub async fn get_recent_orders(&self) -> Vec<TranscriptionOrder> {
+            let response = self
+                .http_client
+                .post(
+                    "https://www.iflyrec.com/XFTJWebAdaptService/v2/hjProcess/recentOperationFiles",
+                )
+                .header("Accept", "application/json, text/plain, */*")
+                .header("Content-Type", "application/json")
+                .header("X-Biz-Id", "tjzs")
+                .header("X-Session-Id", self.session_id.clone())
+                .body("{}")
+                .send()
+                .await;
+
+            let response_data = serde_json::from_str::<GetRecentOrdersResponse>(
+                &response.unwrap().text().await.unwrap(),
+            );
+
+            response_data.unwrap().biz.hj_list
+        }
+
+        pub async fn get_order(
+            &self,
+            order_id: String,
+        ) -> Result<Option<TranscriptionOrder>, Box<dyn Error>> {
+            let response = self.get_recent_orders().await;
+
+            let response_data = response
+                .iter()
+                .find(|item| item.order_id == order_id)
+                .cloned();
+
+            Ok(response_data)
+        }
         pub async fn upload_audio_file(
             &self,
             audio_path_str: &str,
@@ -333,5 +367,68 @@ pub mod api {
 
             Ok(data_block)
         }
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct GetRecentOrdersResponse {
+        pub biz: GetRecentOrdersBiz,
+        pub code: String,
+        pub desc: String,
+    }
+
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GetRecentOrdersBiz {
+        pub count: i32,
+        pub hj_list: Vec<TranscriptionOrder>,
+        pub scroll_up_query_param: ScrollQueryParam,
+        pub scroll_down_query_param: ScrollQueryParam,
+    }
+
+    #[derive(Clone, Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct TranscriptionOrder {
+        pub order_id: String,
+        pub origin_audio_id: String,
+        pub order_status: String,
+        pub order_name: String,
+        pub create_time: i64,
+        pub favorite_time: Option<i64>,
+        pub last_operate_time: i64,
+        pub audio_durations: i64,
+        pub hj_from: String,
+        pub hj_from_desc: String,
+        pub keyword: Vec<String>,
+        pub full_text_abstract: Option<String>,
+        pub hj_size: i64,
+        pub favorite_status: Option<String>,
+        pub hj_status: Option<String>,
+        pub file_source: String,
+        pub file_re_source: String,
+        pub hj_lock_status: String,
+        pub order_type: String,
+        pub transcript_status: Option<String>,
+        pub type_: i32,
+        pub output_type: i32,
+        pub expedite_transcript: String,
+        pub file_id: String,
+        pub red_point_status: i32,
+        pub example_order: Option<String>,
+        pub thumbnail_link_list: Option<Vec<String>>,
+    }
+
+    // impl TranscriptionOrder {
+    //     fn get_order_result(&self){
+
+    //     }
+    // }
+
+    #[derive(Debug, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct ScrollQueryParam {
+        pub hj_id: Option<String>,
+        pub transcript_id: String,
+        pub sort_hj_create_time: Option<i64>,
+        pub sort_trans_create_time: i64,
     }
 }
