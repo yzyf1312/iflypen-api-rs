@@ -1,10 +1,11 @@
 pub mod api {
+    use rand::Rng;
     use reqwest::Client;
     use serde::{Deserialize, Serialize};
     use serde_json::json;
     use std::error::Error;
+    use std::fs;
     use std::path::Path;
-    use std::{fs, io};
     use tokio::time::Duration;
     use tokio_retry::Retry;
     use tokio_retry::strategy::ExponentialBackoff;
@@ -138,7 +139,7 @@ pub mod api {
             }
         }
 
-        pub async fn get_recent_orders(&self) -> Vec<TranscriptionOrder> {
+        pub async fn get_recent_orders(&self) -> Result<Vec<TranscriptionOrder>, Box<dyn Error>> {
             let response = self
                 .http_client
                 .post(
@@ -154,16 +155,16 @@ pub mod api {
 
             let response_data = serde_json::from_str::<GetRecentOrdersResponse>(
                 &response.unwrap().text().await.unwrap(),
-            );
+            )?;
 
-            response_data.unwrap().biz.hj_list
+            Ok(response_data.biz.hj_list)
         }
 
         pub async fn get_order(
             &self,
             order_id: String,
         ) -> Result<Option<TranscriptionOrder>, Box<dyn Error>> {
-            let response = self.get_recent_orders().await;
+            let response = self.get_recent_orders().await?;
 
             let response_data = response
                 .iter()
@@ -180,10 +181,10 @@ pub mod api {
             let audio_path = Path::new(audio_path_str);
 
             // 提取文件名和任务名
-            let file_name = audio_path
-                .file_name()
-                .and_then(|s| s.to_str())
-                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Invalid file path"))?;
+            // let file_name = audio_path
+            //     .file_name()
+            //     .and_then(|s| s.to_str())
+            //     .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Invalid file path"))?;
 
             let task_name: String = match task_name {
                 Some(name) => name,
@@ -202,7 +203,7 @@ pub mod api {
             // 创建初始元数据以获取 file_id
             let initial_metadata = AudioMetadata::new(
                 task_name.to_string(),
-                format!("tjb1/{file_name}"),
+                format!("tjb1/{}", generate_random_file_name()),
                 file_size,
                 audio_time,
                 0,
@@ -304,6 +305,33 @@ pub mod api {
 
             Ok(order_id)
         }
+
+        pub async fn get_order_result(
+            &self,
+            order: &TranscriptionOrder,
+        ) -> Result<TranscriptResult, Box<dyn Error>> {
+            let url = format!(
+                "https://www.iflyrec.com/XFTJWebAdaptService/v1/hyjy/{}/transcriptResults/16?fileSource=app&originAudioId={}",
+                order.order_id, order.origin_audio_id
+            );
+
+            let response = self
+                .http_client
+                .get(url)
+                .header("Accept", "application/json, text/plain, */*")
+                .header("X-Biz-Id", "tjzs")
+                .header("X-Session-Id", self.session_id.clone())
+                .send()
+                .await;
+
+            let response_data = serde_json::from_str::<GetOrderResultResponse>(
+                &response.unwrap().text().await.unwrap(),
+            )?;
+            let text = response_data.biz.transcript_result;
+            let response_data = serde_json::from_str::<TranscriptResult>(&text)?;
+
+            Ok(response_data)
+        }
     }
 
     #[derive(Clone, Debug)]
@@ -370,6 +398,66 @@ pub mod api {
     }
 
     #[derive(Debug, Deserialize)]
+    pub struct GetOrderResultResponse {
+        pub code: String,
+        pub desc: String,
+        pub biz: GetOrderResultBiz,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct GetOrderResultBiz {
+        #[serde(rename = "type")]
+        pub type_num: i32,
+        #[serde(rename = "transcriptResult")]
+        pub transcript_result: String,
+        #[serde(rename = "saveTime")]
+        pub save_time: i64,
+        pub version: i64,
+        #[serde(rename = "hjFrom")]
+        pub hj_from: i32,
+        #[serde(rename = "languageType")]
+        pub language_type: i32,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct TranscriptResult {
+        // pub images: Vec<Value>,
+        #[serde(rename = "ps")]
+        pub paragraphs: Vec<Paragraph>,
+        pub roles: Vec<Role>,
+        // #[serde(rename = "sjResult")]
+        // pub sj_result: Vec<Value>,
+        // pub styles: Vec<Value>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct Paragraph {
+        // paragraph_time 应该为一个 2 元素的数组，分别表示开始和结束时间
+        #[serde(rename = "pTime")]
+        pub paragraph_time: Vec<i64>,
+        pub role: String,
+        pub words: Vec<Word>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct Word {
+        pub modal: bool,
+        #[serde(rename = "rl")]
+        pub role: String,
+        pub text: String,
+        pub time: Vec<i64>,
+        pub wp: String,
+    }
+
+    #[derive(Debug, Deserialize)]
+    pub struct Role {
+        pub name: String,
+        pub role: String,
+        #[serde(rename = "updatedAt")]
+        pub updated_at: i64,
+    }
+
+    #[derive(Debug, Deserialize)]
     pub struct GetRecentOrdersResponse {
         pub biz: GetRecentOrdersBiz,
         pub code: String,
@@ -417,12 +505,6 @@ pub mod api {
         pub thumbnail_link_list: Option<Vec<String>>,
     }
 
-    // impl TranscriptionOrder {
-    //     fn get_order_result(&self){
-
-    //     }
-    // }
-
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct ScrollQueryParam {
@@ -430,5 +512,11 @@ pub mod api {
         pub transcript_id: String,
         pub sort_hj_create_time: Option<i64>,
         pub sort_trans_create_time: i64,
+    }
+
+    fn generate_random_file_name() -> String {
+        let mut rng = rand::rng();
+        let random_number: u32 = rng.random_range(1000..=9999);
+        format!("audio_{}.wav", random_number)
     }
 }

@@ -3,6 +3,7 @@ use iflypen_api_rs::api::{IflyrecClient, TranscriptionOptions, TranscriptionOrde
 use rusqlite::{Connection, Result as SqlResult};
 use std::collections::HashMap;
 use std::error::Error;
+use std::io::Write;
 use tokio::time::Duration;
 use tokio_retry::Retry;
 use tokio_retry::strategy::ExponentialBackoff;
@@ -176,7 +177,26 @@ async fn main() -> Result<(), Box<dyn Error>> {
     })
     .await?;
 
-    println!("订单详细信息: {:#?}", order);
+    if order.order_status == "completed" {
+        let result = client.get_order_result(&order).await?;
+
+        let mut output_buffer = String::new();
+
+        for paragraph in result.paragraphs {
+            let words = paragraph.words;
+            for word in words {
+                output_buffer.push_str(&word.text);
+            }
+            output_buffer.push_str("\n\n");
+        }
+
+        // 写入文件
+        let output_file_name = format!("{}.txt", order.order_name);
+        let output_file_path = std::path::Path::new(&output_file_name);
+        let mut output_file = std::fs::File::create(output_file_path)?;
+        output_file.write_all(output_buffer.as_bytes())?;
+        println!("✅ 转录结果已保存到文件: {}", output_file_name);
+    }
 
     Ok(())
 }
