@@ -180,12 +180,6 @@ pub mod api {
         ) -> Result<String, Box<dyn Error>> {
             let audio_path = Path::new(audio_path_str);
 
-            // 提取文件名和任务名
-            // let file_name = audio_path
-            //     .file_name()
-            //     .and_then(|s| s.to_str())
-            //     .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Invalid file path"))?;
-
             let task_name: String = match task_name {
                 Some(name) => name,
                 None => audio_path

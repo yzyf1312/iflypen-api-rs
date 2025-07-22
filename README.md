@@ -5,9 +5,11 @@ Own an iFlytek Smart Recorder and enjoy free services? Want to quickly convert s
 ## Project Description
 
 This SDK is implemented based on the reverse engineering of the iFlyrec client protocol and is used to access the IFlyPen API. Key features:
-- ✅ Submit local audio files for transcription (currently the only feature)
-- ⚠️ Task status and results must be viewed through the official client
-- 🚫 Result query interface has not been implemented yet (see the development roadmap for details)
+- ✅ Submit local audio files for transcription
+- ✅ Get task status and results through this SDK
+- 🚫 Multi-threaded upload support has not been implemented yet
+- 🚫 AI summary generation has not been implemented yet
+- 🚫 Real-time transcription/translation engine has not been implemented yet
 
 ### What is the IFlyPen API?
 
@@ -32,9 +34,9 @@ For details, see `src/bin/iflypen-cli.rs`. You can try it out by running `cargo 
 | Feature Module                       | Development Status | Target Version |
 | ------------------------------------ | ------------------ | -------------- |
 | Speech Transcription Task Submission | ✅ Implemented      | v1.0           |
-| Task Result Query                    | 🔧 In Development   | v1.1           |
-| Account History Access               | 🔧 In Development   | v1.2           |
-| Multi-threaded Upload Support        | 🚧 Planned          | v1.3           |
+| Task Result Query                    | ✅ Implemented      | v1.1           |
+| Account History Access               | ✅ Implemented      | v1.2           |
+| Multi-threaded Upload Support        | 🔧 In Development   | v1.3           |
 | AI Summary Generation                | 🚧 Planned          | v1.4           |
 | Real-time Translation Engine         | 🚧 Planned          | v1.5           |
 | Batch Task Processing                | 🚧 Planned          | v1.6           |
