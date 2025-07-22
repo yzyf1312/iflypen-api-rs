@@ -8,11 +8,17 @@ use tokio::time::Duration;
 use tokio_retry::Retry;
 use tokio_retry::strategy::ExponentialBackoff;
 
-#[derive(Parser)]
+#[derive(Clone, Parser)]
 struct Args {
     /// 要上传的音频文件路径
-    #[arg(short = 'f', long = "file", help = "音频文件路径（如：data.mp3）")]
-    audio_file: String,
+    #[arg(
+        short = 'f',
+        long = "file",
+        required_unless_present = "order_id",
+        conflicts_with = "order_id",
+        help = "音频文件路径"
+    )]
+    audio_file: Option<String>,
 
     /// 转录任务名称
     #[arg(short = 'n', long = "name", help = "为此次转录任务指定名称")]
@@ -52,6 +58,15 @@ struct Args {
         help = "SQLite 数据库路径，用于提取 session_id"
     )]
     database_path: String,
+
+    /// 通过订单ID下载转写结果
+    #[arg(
+        short = 'o',
+        long = "order-id",required_unless_present = "audio_file",
+        conflicts_with_all = ["audio_file", "task_name", "hot_words", "language", "need_sms"],
+        help = "指定已有订单ID直接下载结果"
+    )]
+    order_id: Option<String>,
 }
 
 /// 从数据库获取最频繁使用的session_id
@@ -102,24 +117,6 @@ fn build_transcription_options(args: &Args) -> Option<TranscriptionOptions> {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    println!("--- 开始转录任务 ---");
-    println!("音频文件: {}", args.audio_file);
-
-    if let Some(ref task_name) = args.task_name {
-        println!("任务名称: {}", task_name);
-    }
-
-    if args.need_sms {
-        println!("短信通知: 已启用");
-    }
-
-    if let Some(ref hot_words) = args.hot_words {
-        println!("热词设置成功: {hot_words}");
-    }
-
-    println!("语言设置: {}", args.language);
-    println!("数据库路径: {}", args.database_path);
-
     // 从数据库获取 session_id
     let session_id = match get_most_frequent_session_id(&args.database_path) {
         Ok(Some(id)) => {
@@ -139,22 +136,45 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // 创建客户端
     let client = IflyrecClient::new(session_id);
 
-    // 构建转录选项
-    let options = build_transcription_options(&args);
+    let order_id = if let Some(order_id) = args.order_id {
+        order_id
+    } else {
+        println!("--- 开始转录任务 ---");
+        let audio_file = args.audio_file.as_ref().unwrap();
+        println!("音频文件: {}", audio_file);
 
-    // 提交转录任务
-    let order_id = match client
-        .initiate_transcription_task(&args.audio_file, args.task_name, options)
-        .await
-    {
-        Ok(order_id) => {
-            println!("✅ 转录任务提交成功！");
-            println!("订单 ID: {}", order_id);
-            order_id
+        if let Some(ref task_name) = args.task_name {
+            println!("任务名称: {}", task_name);
         }
-        Err(e) => {
-            eprintln!("❌ 转录任务提交失败: {}", e);
-            std::process::exit(1);
+
+        if args.need_sms {
+            println!("短信通知: 已启用");
+        }
+
+        if let Some(ref hot_words) = args.hot_words {
+            println!("热词设置成功: {hot_words}");
+        }
+
+        println!("语言设置: {}", args.language);
+        println!("数据库路径: {}", args.database_path);
+
+        // 构建转录选项
+        let options = build_transcription_options(&args);
+
+        // 提交转录任务
+        match client
+            .initiate_transcription_task(audio_file, args.task_name, options)
+            .await
+        {
+            Ok(order_id) => {
+                println!("✅ 转录任务提交成功！");
+                println!("订单 ID: {}", order_id);
+                order_id
+            }
+            Err(e) => {
+                eprintln!("❌ 转录任务提交失败: {}", e);
+                std::process::exit(1);
+            }
         }
     };
     println!("Waiting for the result...");

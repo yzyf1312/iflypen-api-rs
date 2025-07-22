@@ -10,6 +10,7 @@ A command-line interface for interacting with the iFlyRec API, designed to submi
 - Multilingual support (Chinese/English)
 - SMS notifications
 - Automatic extraction of most recent session_id
+- Download transcription results
 
 ---
 
@@ -32,20 +33,24 @@ Rename your audio file to `data.mp3` (format support determined by iFlyRec serve
 
 # Full parameter example
 ./iflyrec-cli -f data.mp3 -n "Meeting" -w "Rust,WebRTC,AI" -l cn -s -d Cookies
+
+# Download result by order ID
+./iflyrec-cli -o 1234567890
 ```
 
 ---
 
 ## 📌 Parameter Reference
 
-| Param | Full Name    | Description                | Default        |
-| ----- | ------------ | -------------------------- | -------------- |
-| `-f`  | `--file`     | Path to audio file         | None           |
-| `-n`  | `--name`     | Transcription task name    | Auto-generated |
-| `-w`  | `--hotwords` | Comma-separated vocabulary | Empty          |
-| `-l`  | `--lang`     | Language code              | `cn`           |
-| `-s`  | `--sms`      | Enable SMS notifications   | Disabled       |
-| `-d`  | `--db`       | Cookies database path      | `Cookies`      |
+| Param | Full Name    | Description                  | Default        |
+| ----- | ------------ | ---------------------------- | -------------- |
+| `-f`  | `--file`     | Path to audio file           | None           |
+| `-n`  | `--name`     | Transcription task name      | Auto-generated |
+| `-w`  | `--hotwords` | Comma-separated vocabulary   | Empty          |
+| `-l`  | `--lang`     | Language code                | `cn`           |
+| `-s`  | `--sms`      | Enable SMS notifications     | Disabled       |
+| `-d`  | `--db`       | Cookies database path        | `Cookies`      |
+| `-o`  | `--order-id` | en: Order ID (download mode) | None           |
 
 ---
 
