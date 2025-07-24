@@ -28,6 +28,31 @@ cargo add --git https://github.com/yzyf1312/iflypen-api-rs.git
 
 详见 `src/bin/iflypen-cli.rs`，你可以通过运行 `cargo run` 来体验它。
 
+## 项目结构
+
+项目已重构为模块化架构：
+
+```
+src/
+├── api/            # API 交互模块
+│   ├── client.rs   # 客户端实现
+│   ├── constants.rs # API 常量与 URL
+│   ├── model.rs    # 数据模型与结构体
+│   └── mod.rs      # 模块导出
+├── error.rs        # 基于 thiserror 的错误处理
+├── util.rs         # 工具函数
+├── lib.rs          # 库入口点
+└── bin/            # CLI 应用程序
+    └── iflypen-cli.rs
+```
+
+### 主要特性
+
+- **模块化设计**: 职责分离清晰，各模块功能独立
+- **完善的错误处理**: 使用 thiserror 定义自定义错误类型
+- **安全性**: 使用 secrecy 保护敏感信息
+- **可维护性**: 代码风格统一，文档完善
+
 ## 开发路线图
 
 | 功能模块         | 开发状态 | 目标版本 |
@@ -35,10 +60,10 @@ cargo add --git https://github.com/yzyf1312/iflypen-api-rs.git
 | 语音转写任务提交 | ✅ 已实现 | v1.0     |
 | 任务结果查询     | ✅ 已实现 | v1.1     |
 | 账户历史记录访问 | ✅ 已实现 | v1.2     |
-| 多线程上传支持   | 🔧 开发中 | v1.3     |
-| AI总结生成       | 🚧 筹备中 | v1.4     |
-| 实时翻译引擎     | 🚧 筹备中 | v1.5     |
-| 批量任务处理     | 🚧 筹备中 | v1.6     |
+| 多线程上传支持   | 🔧 开发中 | v2.1     |
+| AI总结生成       | 🚧 筹备中 | v2.2     |
+| 实时翻译引擎     | 🚧 筹备中 | v2.3     |
+| 批量任务处理     | 🚧 筹备中 | v2.4     |
 
 ## 警告
 

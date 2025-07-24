@@ -29,6 +29,31 @@ cargo add --git https://github.com/yzyf1312/iflypen-api-rs.git
 
 For details, see `src/bin/iflypen-cli.rs`. You can try it out by running `cargo run`.
 
+## Project Structure
+
+The project has been refactored with a modular architecture:
+
+```
+src/
+├── api/            # API interaction modules
+│   ├── client.rs   # Client implementation
+│   ├── constants.rs # API constants and URLs
+│   ├── model.rs    # Data models and structures
+│   └── mod.rs      # Module exports
+├── error.rs        # Error handling with thiserror
+├── util.rs         # Utility functions
+├── lib.rs          # Library entry point
+└── bin/            # CLI application
+    └── iflypen-cli.rs
+```
+
+### Key Features
+
+- **Modular Design**: Clean separation of concerns with dedicated modules
+- **Proper Error Handling**: Custom error types with thiserror
+- **Security**: Sensitive information protected with secrecy
+- **Maintainability**: Consistent code style and documentation
+
 ## Development Roadmap
 
 | Feature Module                       | Development Status | Target Version |
@@ -36,10 +61,10 @@ For details, see `src/bin/iflypen-cli.rs`. You can try it out by running `cargo 
 | Speech Transcription Task Submission | ✅ Implemented      | v1.0           |
 | Task Result Query                    | ✅ Implemented      | v1.1           |
 | Account History Access               | ✅ Implemented      | v1.2           |
-| Multi-threaded Upload Support        | 🔧 In Development   | v1.3           |
-| AI Summary Generation                | 🚧 Planned          | v1.4           |
-| Real-time Translation Engine         | 🚧 Planned          | v1.5           |
-| Batch Task Processing                | 🚧 Planned          | v1.6           |
+| Multi-threaded Upload Support        | 🔧 In Development   | v2.1           |
+| AI Summary Generation                | 🚧 Planned          | v2.2           |
+| Real-time Translation Engine         | 🚧 Planned          | v2.3           |
+| Batch Task Processing                | 🚧 Planned          | v2.4           |
 
 ## Warning
 

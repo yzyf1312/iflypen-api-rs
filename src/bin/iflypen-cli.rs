@@ -1,8 +1,7 @@
 use clap::Parser;
-use iflypen_api_rs::api::{IflyrecClient, TranscriptionOptions, TranscriptionOrder};
+use iflypen_api_rs::{IflyrecClient, TranscriptionOptions, TranscriptionOrder, IflyrecError};
 use rusqlite::{Connection, Result as SqlResult};
 use std::collections::HashMap;
-use std::error::Error;
 use std::io::Write;
 use tokio::time::Duration;
 use tokio_retry::Retry;
@@ -114,7 +113,7 @@ fn build_transcription_options(args: &Args) -> Option<TranscriptionOptions> {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), IflyrecError> {
     let args = Args::parse();
 
     // 从数据库获取 session_id
@@ -124,12 +123,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             id
         }
         Ok(None) => {
-            eprintln!("❌ 错误: 未找到有效的 session_id");
-            std::process::exit(1);
+            return Err(IflyrecError::AuthError("未找到有效的 session_id".to_string()));
         }
         Err(e) => {
-            eprintln!("❌ 数据库访问错误: {}", e);
-            std::process::exit(1);
+            return Err(IflyrecError::DatabaseError(e));
         }
     };
 
@@ -141,10 +138,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     } else {
         println!("--- 开始转录任务 ---");
         let audio_file = args.audio_file.as_ref().unwrap();
-        println!("音频文件: {}", audio_file);
+        println!("音频文件: {audio_file}");
 
         if let Some(ref task_name) = args.task_name {
-            println!("任务名称: {}", task_name);
+            println!("任务名称: {task_name}");
         }
 
         if args.need_sms {
@@ -162,20 +159,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let options = build_transcription_options(&args);
 
         // 提交转录任务
-        match client
+        let order_id = client
             .initiate_transcription_task(audio_file, args.task_name, options)
-            .await
-        {
-            Ok(order_id) => {
-                println!("✅ 转录任务提交成功！");
-                println!("订单 ID: {}", order_id);
-                order_id
-            }
-            Err(e) => {
-                eprintln!("❌ 转录任务提交失败: {}", e);
-                std::process::exit(1);
-            }
-        }
+            .await?;
+            
+        println!("✅ 转录任务提交成功！");
+        println!("订单 ID: {order_id}");
+        order_id
     };
     println!("Waiting for the result...");
     println!("Program will exit after 1 minute.");
@@ -184,15 +174,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .take(5); // 最多重试5次
 
     let order = Retry::spawn(retry_strategy, || async {
-        match client.get_order(order_id.clone()).await {
+        match client.get_order(&order_id).await {
             Ok(order_option) => match order_option {
                 Some(order) => {
                     println!("✅ 转录任务完成！");
-                    Ok::<TranscriptionOrder, Box<dyn Error>>(order)
+                    Ok::<TranscriptionOrder, IflyrecError>(order)
                 }
-                None => Err("⏳ 转录任务正在进行中...".into()),
+                None => Err(IflyrecError::OrderProcessing("⏳ 转录任务正在进行中...".to_string())),
             },
-            Err(e) => Err(format!("❌ 获取订单状态失败: {}", e).into()),
+            Err(e) => Err(e),
         }
     })
     .await?;
@@ -215,7 +205,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let output_file_path = std::path::Path::new(&output_file_name);
         let mut output_file = std::fs::File::create(output_file_path)?;
         output_file.write_all(output_buffer.as_bytes())?;
-        println!("✅ 转录结果已保存到文件: {}", output_file_name);
+        println!("✅ 转录结果已保存到文件: {output_file_name}");
     }
 
     Ok(())

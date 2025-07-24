@@ -22,7 +22,7 @@ A command-line interface for interacting with the iFlyRec API, designed to submi
 - Other platforms: Path unknown
 
 #### Prepare Audio File
-Rename your audio file to `data.mp3` (format support determined by iFlyRec server)
+Place the audio file to be transcribed in the working directory, or specify its full path at runtime.
 
 ---
 

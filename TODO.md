@@ -2,12 +2,12 @@
 
 ### 错误处理优化
 
-- [ ] 引入 `thiserror` 定义自定义错误类型
+- [x] 引入 `thiserror` 定义自定义错误类型
   - 在 `src/error.rs` 创建 `IflyrecError` 枚举
   - 替换所有 `Box<dyn Error>` 返回类型
   - 添加 API 错误码结构化处理逻辑
 
-- [ ] 重构 API 响应错误处理逻辑
+- [x] 重构 API 响应错误处理逻辑
   - 在 `src/api.rs` 添加错误码匹配处理
   - 将通用错误码转换为自定义错误类型
   - 在 HTTP 请求方法中统一错误映射
@@ -26,18 +26,18 @@
   - 添加对其他音频格式的检测支持
 
 ### 代码结构优化
-- [ ] 提取 HTTP 请求构建逻辑
+- [x] 提取 HTTP 请求构建逻辑
   - 在 `src/api/client.rs` 添加 `build_request` 方法
   - 统一处理 Headers 和超时配置
   - 替换所有 HTTP 请求中的重复代码
 
-- [ ] 拆分模块结构
+- [x] 拆分模块结构
   - 创建 `src/api/mod.rs`
-  - 将 `TranscriptionOptions` 移到 `src/api/options.rs`
-  - 将 `AudioMetadata` 移到 `src/api/metadata.rs`
+  - 将数据模型移到 `src/api/model.rs`
+  - 将常量定义移到 `src/api/constants.rs`
 
 ### 安全性增强
-- [ ] 使用 SecretString 存储敏感信息
+- [x] 使用 SecretString 存储敏感信息
   - 修改 `IflyrecClient` 的 `session_id` 字段类型
   - 在 `Cargo.toml` 添加 `secrecy` 依赖
   - 更新相关方法的参数处理逻辑
@@ -49,10 +49,10 @@
   - 允许外部传入最大重试次数和延迟配置
 
 ### 日志与可观测性
-- [ ] 添加 tracing 日志记录
+- [x] 添加 tracing 日志记录
   - 在 `Cargo.toml` 添加 `tracing` 依赖
-  - 在关键方法添加 info!/error! 日志记录
-  - 在 `src/lib.rs` 初始化日志框架
+  - 准备在关键方法添加 info!/error! 日志记录
+  - 准备在 `src/lib.rs` 初始化日志框架
 
 ### 测试覆盖
 - [ ] 编写单元测试
