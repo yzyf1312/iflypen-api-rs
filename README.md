@@ -70,7 +70,7 @@ src/
 
 This project violates clauses **V-7-(2)-8)** and **V-7-(3)** of the [iFlyrec User Agreement](https://static.iflyrec.com/v1/iflyrectjpt/publicread01/privacyPolicy/tjzs/userPrivacyPolicy.html). Users may suffer losses for using this project to access iFlytek services. For specific penalties, please see **Section XI: Handling of Breach of Contract** of the iFlyrec User Agreement.
 
-\*\*This project is for protocol analysis and technical research only. Please adhere to the official iFlytek terms of service. Any loss oramage resulting from the use of this project is the sole responsibility of the user.**
+**This project is for protocol analysis and technical research only. Please adhere to the official iFlytek terms of service. Any loss oramage resulting from the use of this project is the sole responsibility of the user.**
 
 ## Contribution Guide
 
